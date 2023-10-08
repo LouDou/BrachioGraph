@@ -6,12 +6,15 @@ import math
 import numpy
 from plotter import Plotter
 
+import hardware_pigpio
+
 
 class BrachioGraph(Plotter):
     """A shoulder-and-elbow drawing robot class."""
 
     def __init__(
         self,
+        driver = hardware_pigpio.Driver(),
         virtual: bool = False,  # a virtual plotter runs in software only
         turtle: bool = False,  # create a turtle graphics plotter
         turtle_coarseness=None,  # a factor in degrees representing servo resolution
@@ -71,6 +74,7 @@ class BrachioGraph(Plotter):
             wait=wait,
             angular_step=angular_step,
             resolution=resolution,
+            driver=driver,
             virtual=virtual,
             turtle=turtle,
             turtle_coarseness=turtle_coarseness,

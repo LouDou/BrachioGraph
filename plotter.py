@@ -6,14 +6,15 @@ import pprint
 import math
 import readchar
 import tqdm
-import pigpio
 import numpy
 
+import hardware_pigpio
 
 class Plotter:
     def __init__(
         self,
         virtual: bool = False,  # a virtual plotter runs in software only
+        driver = hardware_pigpio.Driver(),
         turtle: bool = False,  # create a turtle graphics plotter
         turtle_coarseness=None,  # a factor in degrees representing servo resolution
         #  ----------------- geometry of the plotter -----------------
@@ -126,20 +127,14 @@ class Plotter:
 
         else:
             try:
-                pigpio.exceptions = False
-                # instantiate this Raspberry Pi as a pigpio.pi() instance
-                self.rpi = pigpio.pi()
-                # the pulse frequency should be no higher than 100Hz - higher values could
-                # (supposedly) # damage the servos
-                self.rpi.set_PWM_frequency(14, 50)
-                self.rpi.set_PWM_frequency(15, 50)
-                pigpio.exceptions = True
+                self.rpi = driver
+                driver.start()
                 self.virtual = False
                 # by default we use a wait factor of 0.01 seconds for better control
                 self.wait = wait if wait is not None else 0.01
 
             except AttributeError:
-                print("pigpio daemon is not available; running in virtual mode")
+                print("hardware is not available; running in virtual mode")
                 self.virtualise()
                 self.wait = wait if wait is not None else 0
 
@@ -147,7 +142,7 @@ class Plotter:
         pw_up = pw_up or 1400
         pw_down = pw_down or 1600
 
-        self.pen = Pen(bg=self, pw_up=pw_up, pw_down=pw_down, virtual=self.virtual)
+        self.pen = Pen(bg=self, driver=self.rpi, pw_up=pw_up, pw_down=pw_down, virtual=self.virtual)
 
         self.angular_step = angular_step or 0.1
         self.resolution = resolution or 0.1
@@ -893,7 +888,7 @@ clockwise and anti-clockwise. Press "0" to exit.
 
 
 class Pen:
-    def __init__(self, bg, pw_up=1700, pw_down=1300, pin=18, transition_time=0.25, virtual=False):
+    def __init__(self, bg, driver, pw_up=1700, pw_down=1300, pin=18, transition_time=0.25, virtual=False):
 
         self.bg = bg
         self.pin = pin
@@ -908,8 +903,7 @@ class Pen:
 
         else:
 
-            self.rpi = pigpio.pi()
-            self.rpi.set_PWM_frequency(self.pin, 50)
+            self.rpi = driver
 
         self.up()
 
